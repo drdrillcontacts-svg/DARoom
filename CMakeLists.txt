@@ -47,6 +47,9 @@ target_sources(DAroom PRIVATE
     Source/PluginEditor.h
 )
 
+# Generates JuceLibraryCode/JuceHeader.h (missing in the original project).
+juce_generate_juce_header(DAroom)
+
 target_compile_definitions(DAroom PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
