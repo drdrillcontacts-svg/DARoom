@@ -1,6 +1,17 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+namespace
+{
+    constexpr float decayMin = 0.2f;
+    constexpr float decayMax = 12.0f;
+
+    // Per-mode voicing: room-size scale, high-frequency damping and stereo width.
+    const float modeSizeScale[DAroomAudioProcessor::numModes] = { 0.86f, 1.00f, 0.94f, 0.90f, 0.80f };
+    const float modeDamping  [DAroomAudioProcessor::numModes] = { 0.62f, 0.42f, 0.22f, 0.50f, 0.72f };
+    const float modeWidth    [DAroomAudioProcessor::numModes] = { 0.85f, 1.00f, 1.00f, 0.90f, 0.70f };
+}
+
 DAroomAudioProcessor::DAroomAudioProcessor()
     : AudioProcessor (BusesProperties()
         .withInput ("Input", juce::AudioChannelSet::stereo(), true)
@@ -13,12 +24,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout DAroomAudioProcessor::create
 {
     using APF = juce::AudioParameterFloat;
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    layout.add (std::make_unique<APF>("mix", "Mix", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 26.0f, "%"));
-    layout.add (std::make_unique<APF>("predelay", "Predelay", juce::NormalisableRange<float>(0.0f, 250.0f, 0.1f), 25.0f, " ms"));
-    layout.add (std::make_unique<APF>("decay", "Decay", juce::NormalisableRange<float>(0.2f, 12.0f, 0.01f), 4.5f, " s"));
-    layout.add (std::make_unique<APF>("size", "Size", juce::NormalisableRange<float>(10.0f, 100.0f, 0.1f), 76.0f, "%"));
-    layout.add (std::make_unique<juce::AudioParameterChoice>("mode", "Mode",
-        juce::StringArray {"Room", "Hall", "Plate", "Chamber", "Ambience"}, 3));
+    layout.add (std::make_unique<APF> ("mix", "Mix", juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 26.0f, "%"));
+    layout.add (std::make_unique<APF> ("predelay", "Predelay", juce::NormalisableRange<float> (0.0f, 250.0f, 0.1f), 25.0f, " ms"));
+    layout.add (std::make_unique<APF> ("decay", "Decay", juce::NormalisableRange<float> (decayMin, decayMax, 0.01f), 4.5f, " s"));
+    layout.add (std::make_unique<APF> ("size", "Size", juce::NormalisableRange<float> (10.0f, 100.0f, 0.1f), 78.0f, "%"));
+    layout.add (std::make_unique<juce::AudioParameterChoice> ("mode", "Mode",
+        juce::StringArray { "Room", "Hall", "Plate", "Chamber", "Ambience" }, 3));
     return layout;
 }
 
@@ -26,102 +37,181 @@ void DAroomAudioProcessor::applyPreset (float mixPercent, float predelayMs, floa
 {
     auto setParam = [this] (const char* id, float value)
     {
-        if (auto* p = parameters.getParameter(id))
-            p->setValueNotifyingHost(p->convertTo0to1(value));
+        if (auto* p = parameters.getParameter (id))
+            p->setValueNotifyingHost (p->convertTo0to1 (value));
     };
-    setParam("mix", mixPercent);
-    setParam("predelay", predelayMs);
-    setParam("decay", decaySeconds);
-    setParam("size", sizePercent);
-    if (auto* p = parameters.getParameter("mode"))
-        p->setValueNotifyingHost(p->convertTo0to1((float) modeIndex));
+
+    setParam ("mix", mixPercent);
+    setParam ("predelay", predelayMs);
+    setParam ("decay", juce::jlimit (decayMin, decayMax, decaySeconds));
+    setParam ("size", sizePercent);
+    setParam ("mode", (float) juce::jlimit (0, numModes - 1, modeIndex));
 }
 
 void DAroomAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    currentSampleRate = sampleRate;
+    currentSampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+
     reverb.reset();
-    reverb.setSampleRate(sampleRate);
-    predelayBuffer.setSize(2, juce::jmax(1, (int) std::ceil(sampleRate * 0.30) + samplesPerBlock));
-    predelayBuffer.clear();
-    predelayWritePosition = 0;
-    wetSmoother.reset(sampleRate, 0.03);
-    drySmoother.reset(sampleRate, 0.03);
-    wetSmoother.setCurrentAndTargetValue(0.26f);
-    drySmoother.setCurrentAndTargetValue(0.74f);
+    reverb.setSampleRate (currentSampleRate);
+
+    ensurePredelayBuffer (samplesPerBlock);
+
+    wetBuffer.setSize (2, juce::jmax (64, samplesPerBlock), false, false, false);
+    wetBuffer.clear();
+
+    // Start the mix smoothers at the *current* parameter value so recalling a
+    // preset or restoring a session does not cause an audible jump on the
+    // first processed block.
+    const float mix = parameters.getRawParameterValue ("mix")->load() * 0.01f;
+    wetSmoother.reset (currentSampleRate, 0.03);
+    drySmoother.reset (currentSampleRate, 0.03);
+    wetSmoother.setCurrentAndTargetValue (mix);
+    drySmoother.setCurrentAndTargetValue (1.0f - mix);
 }
 
 void DAroomAudioProcessor::releaseResources()
 {
-    predelayBuffer.setSize(0, 0);
+    // Keep the allocated buffers (hosts cycle prepare/release often); just
+    // silence the tail so a resumed stream cannot play stale audio.
+    predelayBuffer.clear();
+    predelayWritePosition = 0;
+    wetBuffer.clear();
 }
 
 bool DAroomAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    const auto in = layouts.getMainInputChannelSet();
+    const auto in  = layouts.getMainInputChannelSet();
     const auto out = layouts.getMainOutputChannelSet();
     return in == out && (out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo());
+}
+
+void DAroomAudioProcessor::ensurePredelayBuffer (int samplesPerBlock)
+{
+    const int needed = (int) std::ceil (currentSampleRate * 0.30) + juce::jmax (64, samplesPerBlock);
+
+    if (predelayBuffer.getNumChannels() < 2 || predelayBuffer.getNumSamples() < needed)
+    {
+        predelayBuffer.setSize (2, needed);
+        predelayBuffer.clear();
+        predelayWritePosition = 0;
+    }
+}
+
+void DAroomAudioProcessor::updateReverbParameters (float sizeNorm, float decayNorm, int mode) noexcept
+{
+    const int m = juce::jlimit (0, numModes - 1, mode);
+
+    juce::Reverb::Parameters p;
+    p.roomSize   = juce::jlimit (0.25f, 0.98f, (0.30f + 0.42f * sizeNorm + 0.26f * decayNorm) * modeSizeScale[m]);
+    p.damping    = juce::jlimit (0.05f, 0.95f, modeDamping[m] * (1.0f - 0.30f * decayNorm));
+    p.wetLevel   = 1.0f;
+    p.dryLevel   = 0.0f;
+    p.width      = modeWidth[m];
+    p.freezeMode = 0.0f;
+    reverb.setParameters (p);
 }
 
 void DAroomAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
-    const int channels = juce::jmin(2, buffer.getNumChannels());
-    const int samples = buffer.getNumSamples();
-    for (int ch = getTotalNumInputChannels(); ch < getTotalNumOutputChannels(); ++ch)
-        buffer.clear(ch, 0, samples);
 
-    const float mix = parameters.getRawParameterValue("mix")->load() / 100.0f;
-    const float predelayMs = parameters.getRawParameterValue("predelay")->load();
-    const float decay = parameters.getRawParameterValue("decay")->load();
-    const float size = parameters.getRawParameterValue("size")->load() / 100.0f;
-    const int mode = (int) parameters.getRawParameterValue("mode")->load();
+    const int numIn      = getTotalNumInputChannels();
+    const int numOut     = getTotalNumOutputChannels();
+    const int numSamples = buffer.getNumSamples();
 
-    // A compact, real-time-safe algorithmic reverb foundation. Mode changes tune
-    // JUCE's stereo reverb model; this is an original implementation, not a clone.
-    const float modeSize[] = { 0.52f, 0.78f, 0.92f, 0.68f, 0.40f };
-    const float modeDamping[] = { 0.62f, 0.42f, 0.22f, 0.50f, 0.72f };
-    reverbParams.roomSize = juce::jlimit(0.05f, 0.98f, 0.22f + size * 0.55f + (decay / 12.0f) * 0.20f);
-    reverbParams.damping = modeDamping[juce::jlimit(0, 4, mode)];
-    reverbParams.wetLevel = 1.0f;
-    reverbParams.dryLevel = 0.0f;
-    reverbParams.width = 1.0f;
-    reverbParams.freezeMode = 0.0f;
-    reverb.setParameters(reverbParams);
+    for (int ch = numIn; ch < numOut; ++ch)
+        buffer.clear (ch, 0, numSamples);
 
-    wetSmoother.setTargetValue(mix);
-    drySmoother.setTargetValue(1.0f - mix);
+    if (numIn <= 0 || numOut <= 0 || numSamples <= 0)
+        return;
 
-    const int delaySamples = juce::jlimit(0, predelayBuffer.getNumSamples() - 1,
-        (int) std::round(predelayMs * 0.001 * currentSampleRate));
+    // Some hosts may deliver audio before prepareToPlay(); stay robust.
+    if (predelayBuffer.getNumSamples() == 0)
+        ensurePredelayBuffer (numSamples);
 
-    for (int i = 0; i < samples; ++i)
+    const float mix        = parameters.getRawParameterValue ("mix")->load() * 0.01f;
+    const float predelayMs = parameters.getRawParameterValue ("predelay")->load();
+    const float decay      = parameters.getRawParameterValue ("decay")->load();
+    const float size       = parameters.getRawParameterValue ("size")->load() * 0.01f;
+    const int   mode       = (int) parameters.getRawParameterValue ("mode")->load();
+
+    updateReverbParameters (size, (decay - decayMin) / (decayMax - decayMin), mode);
+
+    wetSmoother.setTargetValue (mix);
+    drySmoother.setTargetValue (1.0f - mix);
+
+    const bool stereo = numIn > 1;
+
+    float* in0 = buffer.getWritePointer (0);
+    float* in1 = stereo ? buffer.getWritePointer (1) : nullptr;
+
+    // ---- predelay ring buffer (wet path only) -------------------------------
+    const int ringLen = predelayBuffer.getNumSamples();
+    const int clampedDelay = juce::jlimit (0, ringLen - 1,
+                                           juce::roundToInt (predelayMs * 0.001 * currentSampleRate));
+
+    float* pd0 = predelayBuffer.getWritePointer (0);
+    float* pd1 = predelayBuffer.getWritePointer (1);
+
+    if (wetBuffer.getNumSamples() < numSamples)
+        wetBuffer.setSize (2, numSamples, false, false, false);
+
+    float* wet0 = wetBuffer.getWritePointer (0);
+    float* wet1 = wetBuffer.getWritePointer (1);
+
+    int writePos = predelayWritePosition;
+
+    for (int i = 0; i < numSamples; ++i)
     {
-        float inL = buffer.getSample(0, i);
-        float inR = channels > 1 ? buffer.getSample(1, i) : inL;
-        float delayedL = inL, delayedR = inR;
+        const float l = in0[i];
+        const float r = stereo ? in1[i] : l;
 
-        if (predelayBuffer.getNumSamples() > 1)
+        float dl = l, dr = r;
+
+        if (clampedDelay > 0)
         {
-            if (delaySamples > 0)
-            {
-                const int readPos = (predelayWritePosition - delaySamples + predelayBuffer.getNumSamples()) % predelayBuffer.getNumSamples();
-                delayedL = predelayBuffer.getSample(0, readPos);
-                delayedR = channels > 1 ? predelayBuffer.getSample(1, readPos) : delayedL;
-            }
-            predelayBuffer.setSample(0, predelayWritePosition, inL);
-            predelayBuffer.setSample(1, predelayWritePosition, inR);
-            predelayWritePosition = (predelayWritePosition + 1) % predelayBuffer.getNumSamples();
+            int readPos = writePos - clampedDelay;
+            if (readPos < 0)
+                readPos += ringLen;
+            dl = pd0[readPos];
+            dr = pd1[readPos];
         }
 
-        float wetL = delayedL, wetR = delayedR;
-        reverb.processStereo(wetL, wetR);
+        pd0[writePos] = l;
+        pd1[writePos] = r;
+        writePos = (writePos + 1 >= ringLen) ? 0 : writePos + 1;
+
+        wet0[i] = dl;
+        wet1[i] = dr;
+    }
+
+    predelayWritePosition = writePos;
+
+    // ---- reverb --------------------------------------------------------------
+    if (stereo)
+        reverb.processStereo (wet0, wet1, numSamples);
+    else
+        reverb.processMono (wet0, numSamples);
+
+    // ---- mix with smoothing ----------------------------------------------------
+    for (int i = 0; i < numSamples; ++i)
+    {
         const float wet = wetSmoother.getNextValue();
         const float dry = drySmoother.getNextValue();
-        buffer.setSample(0, i, inL * dry + wetL * wet);
-        if (channels > 1)
-            buffer.setSample(1, i, inR * dry + wetR * wet);
+
+        in0[i] = in0[i] * dry + wet0[i] * wet;
+
+        if (stereo)
+            in1[i] = in1[i] * dry + wet1[i] * wet;
     }
+}
+
+double DAroomAudioProcessor::getTailLengthSeconds() const
+{
+    const double decay    = (double) parameters.getRawParameterValue ("decay")->load();
+    const double predelay = (double) parameters.getRawParameterValue ("predelay")->load() * 0.001;
+    return juce::jlimit (0.1, 30.0, decay + predelay + 0.5);
 }
 
 juce::AudioProcessorEditor* DAroomAudioProcessor::createEditor()
@@ -133,14 +223,23 @@ void DAroomAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    copyXmlToBinary (*xml, destData);
+
+    if (xml != nullptr)
+    {
+        xml->setAttribute ("presetIndex", presetIndex.load());
+        copyXmlToBinary (*xml, destData);
+    }
 }
 
 void DAroomAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary(data, sizeInBytes));
-    if (xml != nullptr && xml->hasTagName(parameters.state.getType()))
-        parameters.replaceState(juce::ValueTree::fromXml(*xml));
+    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
+
+    if (xml != nullptr && xml->hasTagName (parameters.state.getType()))
+    {
+        presetIndex.store (xml->getIntAttribute ("presetIndex", unsetPresetIndex));
+        parameters.replaceState (juce::ValueTree::fromXml (*xml));
+    }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

@@ -1,6 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
-#include <juce_dsp/juce_dsp.h>
+
+#include <atomic>
+#include <cmath>
 
 class DAroomAudioProcessor final : public juce::AudioProcessor
 {
@@ -20,7 +22,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 12.0; }
+    double getTailLengthSeconds() const override;
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
@@ -34,14 +36,26 @@ public:
     juce::AudioProcessorValueTreeState parameters;
     void applyPreset (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex);
 
+    /** Index of the last recalled factory preset (1..36), 0 = "Manual",
+        unsetPresetIndex = state never stored one. Persisted inside the plug-in state. */
+    static constexpr int unsetPresetIndex = -1;
+    int getPresetIndex() const noexcept { return presetIndex.load(); }
+    void setPresetIndex (int newIndex) noexcept { presetIndex.store (newIndex); }
+
+    static constexpr int numModes = 5;
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    juce::dsp::Reverb reverb;
-    juce::dsp::Reverb::Parameters reverbParams;
+    void updateReverbParameters (float sizeNorm, float decayNorm, int mode) noexcept;
+    void ensurePredelayBuffer (int samplesPerBlock);
+
+    juce::Reverb reverb;
     juce::AudioBuffer<float> predelayBuffer;
+    juce::AudioBuffer<float> wetBuffer;
     int predelayWritePosition = 0;
     double currentSampleRate = 44100.0;
     juce::LinearSmoothedValue<float> wetSmoother, drySmoother;
+    std::atomic<int> presetIndex { unsetPresetIndex };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DAroomAudioProcessor)
 };
