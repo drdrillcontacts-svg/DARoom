@@ -21,7 +21,16 @@ jobs:
       - name: Configure (universal x86_64 + arm64)
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
       - name: Build VST3, AU and Standalone
-        run: cmake --build build --config Release --parallel 3
+        run: |
+          set -o pipefail
+          cmake --build build --config Release --parallel 3 2>&1 | tee build-log.txt
+      - name: Post build log to PR on failure
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "\`\`\`"; echo "macOS build log tail:"; tail -n 100 build-log.txt || true; echo "\`\`\`"; } > log-tail.txt
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file log-tail.txt || true
       - name: Ad-hoc code sign bundles
         run: |
           for bundle in \
@@ -56,7 +65,17 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -A x64
       - name: Build VST3
-        run: cmake --build build --config Release --parallel
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build build --config Release --parallel 2>&1 | tee build-log.txt
+      - name: Post build log to PR on failure
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "\`\`\`"; echo "Windows build log tail:"; tail -n 100 build-log.txt || true; echo "\`\`\`"; } > log-tail.txt
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file log-tail.txt || true
       - name: Upload Windows plugin
         uses: actions/upload-artifact@v4
         with:
