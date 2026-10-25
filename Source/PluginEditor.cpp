@@ -196,7 +196,7 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
 
 void DAroomAudioProcessorEditor::recallPreset (int presetIndex)
 {
-    if (! factoryPresets.isValidIndex (presetIndex - 1))
+    if (presetIndex < 1 || presetIndex > factoryPresets.size())
         return;
 
     const auto& d = factoryPresets.getReference (presetIndex - 1);

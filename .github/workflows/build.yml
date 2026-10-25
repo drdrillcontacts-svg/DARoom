@@ -6,6 +6,10 @@ on:
     branches: [ main, master ]
   pull_request:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -48,6 +52,21 @@ jobs:
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           cp -R build/DAroom_artefacts/Release/AU/DAroom.component "$HOME/Library/Audio/Plug-Ins/Components/"
           auval -v aufx DArm DrAm
+      - name: Package macOS plugins
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          cd build/DAroom_artefacts/Release
+          /usr/bin/zip -rq DAroom-macOS-VST3-AU.zip VST3 AU Standalone
+      - name: Create GitHub release with macOS binaries
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd build/DAroom_artefacts/Release
+          gh release create "v1.1.0-build${GITHUB_RUN_NUMBER}" DAroom-macOS-VST3-AU.zip \
+            --title "DAroom 1.1.0 (build ${GITHUB_RUN_NUMBER})" \
+            --notes "Universal (Intel + Apple Silicon) VST3, AU and Standalone builds, ad-hoc signed. auval result in the run log." \
+            --target "$GITHUB_SHA"
       - name: Upload macOS plugins
         uses: actions/upload-artifact@v4
         with:
