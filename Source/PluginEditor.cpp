@@ -36,42 +36,42 @@ juce::Array<DAroomAudioProcessorEditor::PresetDef> DAroomAudioProcessorEditor::l
     // the plug-in and the on-disk presets can never drift apart.
     static const Resource resources[] =
     {
-    { "small-studio.drpreset", BinaryData::small_studio_drpreset, BinaryData::small_studio_drpresetSize },  // 1: Small Studio
-    { "vocal-booth.drpreset", BinaryData::vocal_booth_drpreset, BinaryData::vocal_booth_drpresetSize },  // 2: Vocal Booth
-    { "living-room.drpreset", BinaryData::living_room_drpreset, BinaryData::living_room_drpresetSize },  // 3: Living Room
-    { "wood-room.drpreset", BinaryData::wood_room_drpreset, BinaryData::wood_room_drpresetSize },  // 4: Wood Room
-    { "drum-room.drpreset", BinaryData::drum_room_drpreset, BinaryData::drum_room_drpresetSize },  // 5: Drum Room
-    { "bright-room.drpreset", BinaryData::bright_room_drpreset, BinaryData::bright_room_drpresetSize },  // 6: Bright Room
-    { "tight-booth.drpreset", BinaryData::tight_booth_drpreset, BinaryData::tight_booth_drpresetSize },  // 7: Tight Booth
-    { "tracking-room.drpreset", BinaryData::tracking_room_drpreset, BinaryData::tracking_room_drpresetSize },  // 8: Tracking Room
-    { "small-hall.drpreset", BinaryData::small_hall_drpreset, BinaryData::small_hall_drpresetSize },  // 9: Small Hall
-    { "concert-hall.drpreset", BinaryData::concert_hall_drpreset, BinaryData::concert_hall_drpresetSize },  // 10: Concert Hall
-    { "dark-hall.drpreset", BinaryData::dark_hall_drpreset, BinaryData::dark_hall_drpresetSize },  // 11: Dark Hall
-    { "bright-hall.drpreset", BinaryData::bright_hall_drpreset, BinaryData::bright_hall_drpresetSize },  // 12: Bright Hall
+    { "small-studio.drpreset", BinaryData::smallstudio_drpreset, BinaryData::smallstudio_drpresetSize },  // 1: Small Studio
+    { "vocal-booth.drpreset", BinaryData::vocalbooth_drpreset, BinaryData::vocalbooth_drpresetSize },  // 2: Vocal Booth
+    { "living-room.drpreset", BinaryData::livingroom_drpreset, BinaryData::livingroom_drpresetSize },  // 3: Living Room
+    { "wood-room.drpreset", BinaryData::woodroom_drpreset, BinaryData::woodroom_drpresetSize },  // 4: Wood Room
+    { "drum-room.drpreset", BinaryData::drumroom_drpreset, BinaryData::drumroom_drpresetSize },  // 5: Drum Room
+    { "bright-room.drpreset", BinaryData::brightroom_drpreset, BinaryData::brightroom_drpresetSize },  // 6: Bright Room
+    { "tight-booth.drpreset", BinaryData::tightbooth_drpreset, BinaryData::tightbooth_drpresetSize },  // 7: Tight Booth
+    { "tracking-room.drpreset", BinaryData::trackingroom_drpreset, BinaryData::trackingroom_drpresetSize },  // 8: Tracking Room
+    { "small-hall.drpreset", BinaryData::smallhall_drpreset, BinaryData::smallhall_drpresetSize },  // 9: Small Hall
+    { "concert-hall.drpreset", BinaryData::concerthall_drpreset, BinaryData::concerthall_drpresetSize },  // 10: Concert Hall
+    { "dark-hall.drpreset", BinaryData::darkhall_drpreset, BinaryData::darkhall_drpresetSize },  // 11: Dark Hall
+    { "bright-hall.drpreset", BinaryData::brighthall_drpreset, BinaryData::brighthall_drpresetSize },  // 12: Bright Hall
     { "cathedral.drpreset", BinaryData::cathedral_drpreset, BinaryData::cathedral_drpresetSize },  // 13: Cathedral
     { "arena.drpreset", BinaryData::arena_drpreset, BinaryData::arena_drpresetSize },  // 14: Arena
-    { "vintage-plate.drpreset", BinaryData::vintage_plate_drpreset, BinaryData::vintage_plate_drpresetSize },  // 15: Vintage Plate
-    { "vocal-plate.drpreset", BinaryData::vocal_plate_drpreset, BinaryData::vocal_plate_drpresetSize },  // 16: Vocal Plate
-    { "bright-plate.drpreset", BinaryData::bright_plate_drpreset, BinaryData::bright_plate_drpresetSize },  // 17: Bright Plate
-    { "drum-plate.drpreset", BinaryData::drum_plate_drpreset, BinaryData::drum_plate_drpresetSize },  // 18: Drum Plate
-    { "deep-chamber.drpreset", BinaryData::deep_chamber_drpreset, BinaryData::deep_chamber_drpresetSize },  // 19: Deep Chamber
-    { "stone-chamber.drpreset", BinaryData::stone_chamber_drpreset, BinaryData::stone_chamber_drpresetSize },  // 20: Stone Chamber
-    { "warm-chamber.drpreset", BinaryData::warm_chamber_drpreset, BinaryData::warm_chamber_drpresetSize },  // 21: Warm Chamber
-    { "dark-chamber.drpreset", BinaryData::dark_chamber_drpreset, BinaryData::dark_chamber_drpresetSize },  // 22: Dark Chamber
-    { "gold-chamber.drpreset", BinaryData::gold_chamber_drpreset, BinaryData::gold_chamber_drpresetSize },  // 23: Gold Chamber
-    { "ambient-cloud.drpreset", BinaryData::ambient_cloud_drpreset, BinaryData::ambient_cloud_drpresetSize },  // 24: Ambient Cloud
-    { "dream-space.drpreset", BinaryData::dream_space_drpreset, BinaryData::dream_space_drpresetSize },  // 25: Dream Space
-    { "cosmic-drift.drpreset", BinaryData::cosmic_drift_drpreset, BinaryData::cosmic_drift_drpresetSize },  // 26: Cosmic Drift
-    { "frozen-air.drpreset", BinaryData::frozen_air_drpreset, BinaryData::frozen_air_drpresetSize },  // 27: Frozen Air
-    { "soft-focus.drpreset", BinaryData::soft_focus_drpreset, BinaryData::soft_focus_drpresetSize },  // 28: Soft Focus
-    { "wide-synth.drpreset", BinaryData::wide_synth_drpreset, BinaryData::wide_synth_drpresetSize },  // 29: Wide Synth
-    { "cinematic-impact.drpreset", BinaryData::cinematic_impact_drpreset, BinaryData::cinematic_impact_drpresetSize },  // 30: Cinematic Impact
-    { "piano-bloom.drpreset", BinaryData::piano_bloom_drpreset, BinaryData::piano_bloom_drpresetSize },  // 31: Piano Bloom
-    { "guitar-springless.drpreset", BinaryData::guitar_springless_drpreset, BinaryData::guitar_springless_drpresetSize },  // 32: Guitar Springless
-    { "snare-bloom.drpreset", BinaryData::snare_bloom_drpreset, BinaryData::snare_bloom_drpresetSize },  // 33: Snare Bloom
-    { "orchestral-depth.drpreset", BinaryData::orchestral_depth_drpreset, BinaryData::orchestral_depth_drpresetSize },  // 34: Orchestral Depth
-    { "whisper-room.drpreset", BinaryData::whisper_room_drpreset, BinaryData::whisper_room_drpresetSize },  // 35: Whisper Room
-    { "endless-horizon.drpreset", BinaryData::endless_horizon_drpreset, BinaryData::endless_horizon_drpresetSize },  // 36: Endless Horizon
+    { "vintage-plate.drpreset", BinaryData::vintageplate_drpreset, BinaryData::vintageplate_drpresetSize },  // 15: Vintage Plate
+    { "vocal-plate.drpreset", BinaryData::vocalplate_drpreset, BinaryData::vocalplate_drpresetSize },  // 16: Vocal Plate
+    { "bright-plate.drpreset", BinaryData::brightplate_drpreset, BinaryData::brightplate_drpresetSize },  // 17: Bright Plate
+    { "drum-plate.drpreset", BinaryData::drumplate_drpreset, BinaryData::drumplate_drpresetSize },  // 18: Drum Plate
+    { "deep-chamber.drpreset", BinaryData::deepchamber_drpreset, BinaryData::deepchamber_drpresetSize },  // 19: Deep Chamber
+    { "stone-chamber.drpreset", BinaryData::stonechamber_drpreset, BinaryData::stonechamber_drpresetSize },  // 20: Stone Chamber
+    { "warm-chamber.drpreset", BinaryData::warmchamber_drpreset, BinaryData::warmchamber_drpresetSize },  // 21: Warm Chamber
+    { "dark-chamber.drpreset", BinaryData::darkchamber_drpreset, BinaryData::darkchamber_drpresetSize },  // 22: Dark Chamber
+    { "gold-chamber.drpreset", BinaryData::goldchamber_drpreset, BinaryData::goldchamber_drpresetSize },  // 23: Gold Chamber
+    { "ambient-cloud.drpreset", BinaryData::ambientcloud_drpreset, BinaryData::ambientcloud_drpresetSize },  // 24: Ambient Cloud
+    { "dream-space.drpreset", BinaryData::dreamspace_drpreset, BinaryData::dreamspace_drpresetSize },  // 25: Dream Space
+    { "cosmic-drift.drpreset", BinaryData::cosmicdrift_drpreset, BinaryData::cosmicdrift_drpresetSize },  // 26: Cosmic Drift
+    { "frozen-air.drpreset", BinaryData::frozenair_drpreset, BinaryData::frozenair_drpresetSize },  // 27: Frozen Air
+    { "soft-focus.drpreset", BinaryData::softfocus_drpreset, BinaryData::softfocus_drpresetSize },  // 28: Soft Focus
+    { "wide-synth.drpreset", BinaryData::widesynth_drpreset, BinaryData::widesynth_drpresetSize },  // 29: Wide Synth
+    { "cinematic-impact.drpreset", BinaryData::cinematicimpact_drpreset, BinaryData::cinematicimpact_drpresetSize },  // 30: Cinematic Impact
+    { "piano-bloom.drpreset", BinaryData::pianobloom_drpreset, BinaryData::pianobloom_drpresetSize },  // 31: Piano Bloom
+    { "guitar-springless.drpreset", BinaryData::guitarspringless_drpreset, BinaryData::guitarspringless_drpresetSize },  // 32: Guitar Springless
+    { "snare-bloom.drpreset", BinaryData::snarebloom_drpreset, BinaryData::snarebloom_drpresetSize },  // 33: Snare Bloom
+    { "orchestral-depth.drpreset", BinaryData::orchestraldepth_drpreset, BinaryData::orchestraldepth_drpresetSize },  // 34: Orchestral Depth
+    { "whisper-room.drpreset", BinaryData::whisperroom_drpreset, BinaryData::whisperroom_drpresetSize },  // 35: Whisper Room
+    { "endless-horizon.drpreset", BinaryData::endlesshorizon_drpreset, BinaryData::endlesshorizon_drpresetSize },  // 36: Endless Horizon
     };
 
     const juce::StringArray modeStrings { "Room", "Hall", "Plate", "Chamber", "Ambience" };
@@ -132,7 +132,6 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
         presetSelector.addItem (factoryPresets[i].name, i + 2);
 
     presetSelector.setJustificationType (juce::Justification::centred);
-    presetSelector.setFont (juce::Font (juce::FontOptions (11.0f)));
     presetSelector.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0x00ffffff));
     presetSelector.setColour (juce::ComboBox::textColourId, juce::Colour (0xffd5dde1));
     presetSelector.setColour (juce::ComboBox::outlineColourId, juce::Colour (0x00ffffff));
