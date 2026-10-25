@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(DAroom VERSION 1.0.0)
+project(DAroom VERSION 1.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,9 +13,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
+# The editable factory presets are embedded as binary data so the plug-in and
+# the files in Presets/ can never drift apart.
+file(GLOB DAROOM_PRESET_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Presets/*.drpreset)
+
 juce_add_binary_data(DAroomAssets
     SOURCES
         Assets/DAroom_UI_Reference.png
+        ${DAROOM_PRESET_FILES}
 )
 
 juce_add_plugin(DAroom
@@ -26,6 +31,7 @@ juce_add_plugin(DAroom
     FORMATS VST3 AU Standalone
     PRODUCT_NAME "DAroom"
     DESCRIPTION "DAroom algorithmic reverb"
+    VST3_CATEGORIES Fx Reverb
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
@@ -50,7 +56,6 @@ target_compile_definitions(DAroom PUBLIC
 target_link_libraries(DAroom PRIVATE
     DAroomAssets
     juce::juce_audio_utils
-    juce::juce_dsp
     PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

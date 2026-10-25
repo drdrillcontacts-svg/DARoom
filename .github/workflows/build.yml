@@ -6,6 +6,10 @@ on:
     branches: [ main, master ]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-macos:
     runs-on: macos-14
@@ -14,10 +18,27 @@ jobs:
         uses: actions/checkout@v4
       - name: Install CMake
         run: brew install cmake ninja
-      - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (universal x86_64 + arm64)
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
       - name: Build VST3, AU and Standalone
         run: cmake --build build --config Release --parallel 3
+      - name: Ad-hoc code sign bundles
+        run: |
+          for bundle in \
+            "build/DAroom_artefacts/Release/VST3/DAroom.vst3" \
+            "build/DAroom_artefacts/Release/AU/DAroom.component" \
+            "build/DAroom_artefacts/Release/Standalone/DAroom.app"; do
+            if [ -e "$bundle" ]; then
+              codesign --force --deep --sign - "$bundle" || true
+              codesign --verify --deep --strict --verbose=2 "$bundle" || true
+            fi
+          done
+      - name: Validate AU with auval
+        continue-on-error: true
+        run: |
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          cp -R build/DAroom_artefacts/Release/AU/DAroom.component "$HOME/Library/Audio/Plug-Ins/Components/"
+          auval -v aufx DArm DrAm
       - name: Upload macOS plugins
         uses: actions/upload-artifact@v4
         with:
