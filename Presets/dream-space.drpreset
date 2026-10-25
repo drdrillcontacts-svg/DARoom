@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Dream Space",
+  "description": "Soft expansive ambience.",
+  "parameters": {
+    "mix": 35,
+    "predelay_ms": 30,
+    "decay_seconds": 7.2,
+    "size_percent": 90,
+    "mode": "Ambience"
+  }
+}

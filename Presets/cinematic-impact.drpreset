@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Cinematic Impact",
+  "description": "Large dramatic tail for transitions.",
+  "parameters": {
+    "mix": 20,
+    "predelay_ms": 12,
+    "decay_seconds": 4.8,
+    "size_percent": 90,
+    "mode": "Chamber"
+  }
+}

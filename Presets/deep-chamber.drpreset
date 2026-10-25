@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Deep Chamber",
+  "description": "Deep chamber with a cinematic tail.",
+  "parameters": {
+    "mix": 26,
+    "predelay_ms": 25,
+    "decay_seconds": 4.5,
+    "size_percent": 78,
+    "mode": "Chamber"
+  }
+}

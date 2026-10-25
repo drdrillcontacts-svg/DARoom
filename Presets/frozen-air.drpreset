@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Frozen Air",
+  "description": "Cool, airy sustain for textures.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 28,
+    "decay_seconds": 5.8,
+    "size_percent": 86,
+    "mode": "Ambience"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Ambient Cloud",
+  "description": "Long, floating wash for pads.",
+  "parameters": {
+    "mix": 32,
+    "predelay_ms": 35,
+    "decay_seconds": 8.5,
+    "size_percent": 95,
+    "mode": "Ambience"
+  }
+}

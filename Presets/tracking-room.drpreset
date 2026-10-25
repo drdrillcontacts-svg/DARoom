@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Tracking Room",
+  "description": "Balanced tracking-room depth.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 14,
+    "decay_seconds": 1.4,
+    "size_percent": 55,
+    "mode": "Room"
+  }
+}

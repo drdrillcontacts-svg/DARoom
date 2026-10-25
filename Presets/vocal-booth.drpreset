@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Vocal Booth",
+  "description": "Very short ambience for intimate vocals.",
+  "parameters": {
+    "mix": 12,
+    "predelay_ms": 4,
+    "decay_seconds": 0.45,
+    "size_percent": 24,
+    "mode": "Room"
+  }
+}

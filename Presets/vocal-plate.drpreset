@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Vocal Plate",
+  "description": "Smooth vocal sustain without huge space.",
+  "parameters": {
+    "mix": 24,
+    "predelay_ms": 18,
+    "decay_seconds": 1.8,
+    "size_percent": 55,
+    "mode": "Plate"
+  }
+}

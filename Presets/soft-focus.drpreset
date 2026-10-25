@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Soft Focus",
+  "description": "Gentle atmospheric depth.",
+  "parameters": {
+    "mix": 18,
+    "predelay_ms": 24,
+    "decay_seconds": 4.2,
+    "size_percent": 78,
+    "mode": "Ambience"
+  }
+}

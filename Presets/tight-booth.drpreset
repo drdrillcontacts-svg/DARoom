@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Tight Booth",
+  "description": "Almost dry, compact space.",
+  "parameters": {
+    "mix": 10,
+    "predelay_ms": 2,
+    "decay_seconds": 0.3,
+    "size_percent": 18,
+    "mode": "Room"
+  }
+}

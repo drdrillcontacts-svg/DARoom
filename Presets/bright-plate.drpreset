@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Bright Plate",
+  "description": "Bright, cutting plate-like tail.",
+  "parameters": {
+    "mix": 26,
+    "predelay_ms": 8,
+    "decay_seconds": 2.6,
+    "size_percent": 62,
+    "mode": "Plate"
+  }
+}

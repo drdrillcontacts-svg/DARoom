@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Piano Bloom",
+  "description": "Long but articulate piano ambience.",
+  "parameters": {
+    "mix": 24,
+    "predelay_ms": 16,
+    "decay_seconds": 3.1,
+    "size_percent": 66,
+    "mode": "Hall"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Dark Chamber",
+  "description": "Dark and smooth chamber tail.",
+  "parameters": {
+    "mix": 20,
+    "predelay_ms": 16,
+    "decay_seconds": 3.2,
+    "size_percent": 64,
+    "mode": "Chamber"
+  }
+}

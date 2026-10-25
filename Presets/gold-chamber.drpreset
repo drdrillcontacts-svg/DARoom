@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Gold Chamber",
+  "description": "Rich, glossy chamber ambience.",
+  "parameters": {
+    "mix": 28,
+    "predelay_ms": 14,
+    "decay_seconds": 2.8,
+    "size_percent": 70,
+    "mode": "Chamber"
+  }
+}

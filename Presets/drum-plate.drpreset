@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Drum Plate",
+  "description": "Fast plate-style sustain for snare.",
+  "parameters": {
+    "mix": 18,
+    "predelay_ms": 4,
+    "decay_seconds": 1.35,
+    "size_percent": 50,
+    "mode": "Plate"
+  }
+}

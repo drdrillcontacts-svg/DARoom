@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Wood Room",
+  "description": "Warm, controlled room for drums and piano.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 10,
+    "decay_seconds": 0.9,
+    "size_percent": 42,
+    "mode": "Room"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Orchestral Depth",
+  "description": "Deep orchestral depth.",
+  "parameters": {
+    "mix": 25,
+    "predelay_ms": 24,
+    "decay_seconds": 4.6,
+    "size_percent": 82,
+    "mode": "Hall"
+  }
+}

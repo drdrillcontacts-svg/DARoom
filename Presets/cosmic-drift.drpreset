@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Cosmic Drift",
+  "description": "Very long, wide atmospheric tail.",
+  "parameters": {
+    "mix": 28,
+    "predelay_ms": 42,
+    "decay_seconds": 10.0,
+    "size_percent": 100,
+    "mode": "Ambience"
+  }
+}

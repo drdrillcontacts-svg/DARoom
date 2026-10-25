@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Cathedral",
+  "description": "Vast sacred-space tail.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 28,
+    "decay_seconds": 6.8,
+    "size_percent": 84,
+    "mode": "Hall"
+  }
+}

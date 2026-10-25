@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Warm Chamber",
+  "description": "Warm, balanced chamber space.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 20,
+    "decay_seconds": 2.4,
+    "size_percent": 68,
+    "mode": "Chamber"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Vintage Plate",
+  "description": "Dense metallic plate-style ambience.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 10,
+    "decay_seconds": 2.2,
+    "size_percent": 60,
+    "mode": "Plate"
+  }
+}

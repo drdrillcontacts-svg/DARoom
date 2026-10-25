@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Wide Synth",
+  "description": "Wide space for synth leads and pads.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 18,
+    "decay_seconds": 5.2,
+    "size_percent": 88,
+    "mode": "Ambience"
+  }
+}

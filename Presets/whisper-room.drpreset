@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Whisper Room",
+  "description": "Subtle intimate vocal space.",
+  "parameters": {
+    "mix": 12,
+    "predelay_ms": 18,
+    "decay_seconds": 1.3,
+    "size_percent": 44,
+    "mode": "Room"
+  }
+}

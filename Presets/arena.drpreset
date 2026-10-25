@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Arena",
+  "description": "Huge, dramatic live space.",
+  "parameters": {
+    "mix": 26,
+    "predelay_ms": 32,
+    "decay_seconds": 5.4,
+    "size_percent": 92,
+    "mode": "Hall"
+  }
+}

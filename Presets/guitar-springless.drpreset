@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Guitar Springless",
+  "description": "Smooth sustain for electric guitar.",
+  "parameters": {
+    "mix": 18,
+    "predelay_ms": 10,
+    "decay_seconds": 1.6,
+    "size_percent": 48,
+    "mode": "Plate"
+  }
+}

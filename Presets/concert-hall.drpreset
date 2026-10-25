@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Concert Hall",
+  "description": "Broad orchestral hall with a long tail.",
+  "parameters": {
+    "mix": 28,
+    "predelay_ms": 22,
+    "decay_seconds": 3.2,
+    "size_percent": 74,
+    "mode": "Hall"
+  }
+}

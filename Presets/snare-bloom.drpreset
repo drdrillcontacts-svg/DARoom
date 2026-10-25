@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Snare Bloom",
+  "description": "Quick transient bloom for snare.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 5,
+    "decay_seconds": 1.75,
+    "size_percent": 54,
+    "mode": "Plate"
+  }
+}

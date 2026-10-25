@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Endless Horizon",
+  "description": "Maximum-length atmospheric wash.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 50,
+    "decay_seconds": 12.0,
+    "size_percent": 100,
+    "mode": "Ambience"
+  }
+}

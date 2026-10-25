@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Drum Room",
+  "description": "Punchy room energy for close drums.",
+  "parameters": {
+    "mix": 28,
+    "predelay_ms": 6,
+    "decay_seconds": 0.85,
+    "size_percent": 58,
+    "mode": "Room"
+  }
+}

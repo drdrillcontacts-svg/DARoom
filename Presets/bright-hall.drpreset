@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Bright Hall",
+  "description": "Open hall with clear presence.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 18,
+    "decay_seconds": 2.7,
+    "size_percent": 68,
+    "mode": "Hall"
+  }
+}

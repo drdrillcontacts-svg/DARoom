@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Bright Room",
+  "description": "Lively upper reflections for percussion.",
+  "parameters": {
+    "mix": 20,
+    "predelay_ms": 9,
+    "decay_seconds": 1.25,
+    "size_percent": 52,
+    "mode": "Room"
+  }
+}

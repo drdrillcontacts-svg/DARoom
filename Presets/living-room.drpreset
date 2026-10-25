@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Living Room",
+  "description": "Natural domestic room ambience.",
+  "parameters": {
+    "mix": 24,
+    "predelay_ms": 12,
+    "decay_seconds": 1.1,
+    "size_percent": 48,
+    "mode": "Room"
+  }
+}
