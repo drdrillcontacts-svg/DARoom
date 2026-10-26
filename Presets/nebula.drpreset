@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Nebula",
+  "description": "Huge cosmic drift, endless tail.",
+  "parameters": {
+    "mix": 32,
+    "predelay_ms": 38,
+    "decay_seconds": 9.0,
+    "size_percent": 96,
+    "mode": "Ambience"
+  }
+}

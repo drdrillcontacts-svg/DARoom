@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Studio Plate",
+  "description": "Classic vocal plate, smooth density.",
+  "parameters": {
+    "mix": 22,
+    "predelay_ms": 12,
+    "decay_seconds": 1.6,
+    "size_percent": 52,
+    "mode": "Plate"
+  }
+}

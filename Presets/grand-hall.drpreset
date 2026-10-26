@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Grand Hall",
+  "description": "Large concert hall with long bloom.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 26,
+    "decay_seconds": 4.2,
+    "size_percent": 80,
+    "mode": "Hall"
+  }
+}

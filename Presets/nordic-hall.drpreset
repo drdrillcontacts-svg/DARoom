@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Nordic Hall",
+  "description": "Cool bright hall with airy tail.",
+  "parameters": {
+    "mix": 26,
+    "predelay_ms": 20,
+    "decay_seconds": 3.0,
+    "size_percent": 72,
+    "mode": "Hall"
+  }
+}

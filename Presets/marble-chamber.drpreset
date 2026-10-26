@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Marble Chamber",
+  "description": "Bright stone chamber, reflective.",
+  "parameters": {
+    "mix": 26,
+    "predelay_ms": 18,
+    "decay_seconds": 2.9,
+    "size_percent": 66,
+    "mode": "Chamber"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Echo Chamber",
+  "description": "Big chamber with pronounced echoes.",
+  "parameters": {
+    "mix": 30,
+    "predelay_ms": 22,
+    "decay_seconds": 3.4,
+    "size_percent": 70,
+    "mode": "Chamber"
+  }
+}

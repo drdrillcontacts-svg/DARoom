@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Opera House",
+  "description": "Warm operatic hall, rich midrange.",
+  "parameters": {
+    "mix": 28,
+    "predelay_ms": 24,
+    "decay_seconds": 3.6,
+    "size_percent": 78,
+    "mode": "Hall"
+  }
+}
