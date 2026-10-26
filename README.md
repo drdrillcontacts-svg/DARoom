@@ -15,6 +15,10 @@ DAroom is an original JUCE-based algorithmic reverb plugin starter with the sele
 ## Important quality note
 This is a functional first implementation, not a claim of parity with ValhallaRoom. It uses JUCE's built-in stereo reverb as a starting point plus a predelay buffer. Matching a mature commercial reverb requires substantial DSP design, listening tests, CPU optimization, parameter smoothing, and validation across sample rates and DAWs.
 
+## Seeing the GUI
+- Every release zip also contains a **Standalone app** (`DAroom.app` on macOS, `DAroom.exe` on Windows): run it to use the full graphical interface without any DAW.
+- Inside a DAW, the artwork UI appears in the plug-in's own window. If you see a plain panel of knobs with value boxes, that is the *host's generic parameter view*: switch it off in the host (e.g. Cubase/Nuendo: the window/GUI toggle in the plug-in window toolbar, or right-click the plug-in name and choose "Show Plug-in GUI"; Ableton: open the plug-in window from the device header; REAPER: disable "Show generic UI").
+
 ## Build locally
 Install CMake, a C++ toolchain, and Git. Then:
 

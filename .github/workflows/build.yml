@@ -96,8 +96,28 @@ jobs:
         run: |
           { echo "\`\`\`"; echo "Windows build log tail:"; tail -n 100 build-log.txt || true; echo "\`\`\`"; } > log-tail.txt
           gh pr comment "${{ github.event.pull_request.number }}" --body-file log-tail.txt || true
+      - name: Package Windows plugins
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        shell: bash
+        run: |
+          cd build/DAroom_artefacts/Release
+          powershell -NoProfile -Command "Compress-Archive -Path VST3, Standalone -DestinationPath DAroom-Windows-VST3-Standalone.zip"
+      - name: Attach Windows zip to the run's release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.2.0-build${GITHUB_RUN_NUMBER}"
+          for i in $(seq 1 80); do
+            gh release view "$TAG" --repo drdrillcontacts-svg/DARoom > /dev/null 2>&1 && break
+            sleep 15
+          done
+          gh release upload "$TAG" build/DAroom_artefacts/Release/DAroom-Windows-VST3-Standalone.zip --clobber --repo drdrillcontacts-svg/DARoom
       - name: Upload Windows plugin
         uses: actions/upload-artifact@v4
         with:
-          name: DAroom-Windows-VST3
-          path: build/DAroom_artefacts/Release/VST3/**
+          name: DAroom-Windows-VST3-Standalone
+          path: |
+            build/DAroom_artefacts/Release/VST3/**
+            build/DAroom_artefacts/Release/Standalone/**
