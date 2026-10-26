@@ -36,7 +36,7 @@ public:
     juce::AudioProcessorValueTreeState parameters;
     void applyPreset (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex);
 
-    /** Index of the last recalled factory preset (1..36), 0 = "Manual",
+    /** Index of the last recalled factory preset (1..50), 0 = "Manual",
         unsetPresetIndex = state never stored one. Persisted inside the plug-in state. */
     static constexpr int unsetPresetIndex = -1;
     int getPresetIndex() const noexcept { return presetIndex.load(); }
@@ -44,10 +44,29 @@ public:
 
     static constexpr int numModes = 5;
 
+    /** One A/B comparison slot: a full snapshot of the sound parameters. */
+    struct SlotState
+    {
+        bool valid = false;
+        float mix = 26.0f, predelayMs = 25.0f, decaySeconds = 4.5f, sizePercent = 78.0f;
+        int mode = 3;
+        int presetIndex = unsetPresetIndex;
+    };
+
+    static constexpr int numSlots = 2;
+    int getActiveSlot() const noexcept { return activeSlot; }
+    const SlotState& getSlot (int slot) const noexcept { return slots[slot == 1 ? 1 : 0]; }
+    /** Switch to a slot: empty slots capture the current sound, filled ones are recalled. */
+    void selectSlot (int slot);
+    /** Overwrite a slot with the current sound (and make it active). */
+    void storeSlot (int slot);
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void updateReverbParameters (float sizeNorm, float decayNorm, int mode) noexcept;
     void ensurePredelayBuffer (int samplesPerBlock);
+    void setParameterValues (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex);
+    void captureCurrent (SlotState& slot) const;
 
     juce::Reverb reverb;
     juce::AudioBuffer<float> predelayBuffer;
@@ -56,6 +75,8 @@ private:
     double currentSampleRate = 44100.0;
     juce::LinearSmoothedValue<float> wetSmoother, drySmoother;
     std::atomic<int> presetIndex { unsetPresetIndex };
+    SlotState slots[numSlots];
+    int activeSlot = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DAroomAudioProcessor)
 };

@@ -30,6 +30,14 @@ Push the project to GitHub. The workflow builds on macOS and Windows and uploads
 
 ## Changelog
 
+### 1.2.0 - UI/UX release
+- **Clickable mode strip**: ROOM/HALL/PLATE/CHAMBER/AMBIENCE now switch on direct click (no popup menu, no dropdown arrow); the active mode is highlighted live.
+- **Live knobs**: the four rotaries are redrawn over the artwork and actually rotate with their parameter values (arc + pointer), fixing the frozen-knob artwork.
+- **Resizable editor** with locked artwork aspect ratio (0.7x - 3x).
+- **Title** now reads "D.A Room".
+- **50 factory presets** (14 new) grouped in the browser menu by space type: Rooms / Halls / Plates / Chambers / Ambiences.
+- **Working A/B pads**: click switches slots (empty slot captures the current sound), double-click stores into a slot; slots persist with the session.
+
 ### 1.1.0 - bug-fix and build release
 - **Fixed: the project did not compile.** `juce::dsp::Reverb` has no `setSampleRate()` or per-sample `processStereo(float&, float&)`; the DSP now uses `juce::Reverb` with its block-based `processStereo/processMono` API.
 - **Fixed: mono operation.** Mono buses previously read the (silenced) second buffer channel as input; mono now feeds both reverb legs and is processed with `processMono`.

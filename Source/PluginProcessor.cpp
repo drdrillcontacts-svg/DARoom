@@ -33,7 +33,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DAroomAudioProcessor::create
     return layout;
 }
 
-void DAroomAudioProcessor::applyPreset (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex)
+void DAroomAudioProcessor::setParameterValues (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex)
 {
     auto setParam = [this] (const char* id, float value)
     {
@@ -46,6 +46,47 @@ void DAroomAudioProcessor::applyPreset (float mixPercent, float predelayMs, floa
     setParam ("decay", juce::jlimit (decayMin, decayMax, decaySeconds));
     setParam ("size", sizePercent);
     setParam ("mode", (float) juce::jlimit (0, numModes - 1, modeIndex));
+}
+
+void DAroomAudioProcessor::applyPreset (float mixPercent, float predelayMs, float decaySeconds, float sizePercent, int modeIndex)
+{
+    setParameterValues (mixPercent, predelayMs, decaySeconds, sizePercent, modeIndex);
+}
+
+void DAroomAudioProcessor::captureCurrent (SlotState& slot) const
+{
+    slot.valid         = true;
+    slot.mix           = parameters.getRawParameterValue ("mix")->load();
+    slot.predelayMs    = parameters.getRawParameterValue ("predelay")->load();
+    slot.decaySeconds  = parameters.getRawParameterValue ("decay")->load();
+    slot.sizePercent   = parameters.getRawParameterValue ("size")->load();
+    slot.mode          = (int) parameters.getRawParameterValue ("mode")->load();
+    slot.presetIndex   = presetIndex.load();
+}
+
+void DAroomAudioProcessor::selectSlot (int slot)
+{
+    const int s = (slot == 1) ? 1 : 0;
+    if (s == activeSlot)
+        return;
+
+    if (! slots[s].valid)
+        captureCurrent (slots[s]);   // empty slot: take a copy of the current sound
+    else
+        setParameterValues (slots[s].mix, slots[s].predelayMs, slots[s].decaySeconds,
+                            slots[s].sizePercent, slots[s].mode);
+
+    if (slots[s].presetIndex != unsetPresetIndex)
+        presetIndex.store (slots[s].presetIndex);
+
+    activeSlot = s;
+}
+
+void DAroomAudioProcessor::storeSlot (int slot)
+{
+    const int s = (slot == 1) ? 1 : 0;
+    captureCurrent (slots[s]);
+    activeSlot = s;
 }
 
 void DAroomAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -227,6 +268,24 @@ void DAroomAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     if (xml != nullptr)
     {
         xml->setAttribute ("presetIndex", presetIndex.load());
+
+        auto* slotsXml = new juce::XmlElement ("slots");
+        slotsXml->setAttribute ("active", activeSlot);
+        for (int i = 0; i < numSlots; ++i)
+        {
+            auto* e = new juce::XmlElement ("slot");
+            e->setAttribute ("id", i);
+            e->setAttribute ("valid", slots[i].valid ? 1 : 0);
+            e->setAttribute ("mix", (double) slots[i].mix);
+            e->setAttribute ("predelay", (double) slots[i].predelayMs);
+            e->setAttribute ("decay", (double) slots[i].decaySeconds);
+            e->setAttribute ("size", (double) slots[i].sizePercent);
+            e->setAttribute ("mode", slots[i].mode);
+            e->setAttribute ("preset", slots[i].presetIndex);
+            slotsXml->addChildElement (e);
+        }
+        xml->addChildElement (slotsXml);
+
         copyXmlToBinary (*xml, destData);
     }
 }
@@ -238,6 +297,23 @@ void DAroomAudioProcessor::setStateInformation (const void* data, int sizeInByte
     if (xml != nullptr && xml->hasTagName (parameters.state.getType()))
     {
         presetIndex.store (xml->getIntAttribute ("presetIndex", unsetPresetIndex));
+
+        if (auto* slotsXml = xml->getChildByName ("slots"))
+        {
+            activeSlot = juce::jlimit (0, numSlots - 1, slotsXml->getIntAttribute ("active", 0));
+            for (auto* e : slotsXml->getChildWithTagNameIterator ("slot"))
+            {
+                const int id = juce::jlimit (0, numSlots - 1, e->getIntAttribute ("id", 0));
+                slots[id].valid         = e->getBoolAttribute ("valid", false);
+                slots[id].mix           = (float) e->getDoubleAttribute ("mix", slots[id].mix);
+                slots[id].predelayMs    = (float) e->getDoubleAttribute ("predelay", slots[id].predelayMs);
+                slots[id].decaySeconds  = (float) e->getDoubleAttribute ("decay", slots[id].decaySeconds);
+                slots[id].sizePercent   = (float) e->getDoubleAttribute ("size", slots[id].sizePercent);
+                slots[id].mode          = juce::jlimit (0, numModes - 1, e->getIntAttribute ("mode", slots[id].mode));
+                slots[id].presetIndex   = e->getIntAttribute ("preset", unsetPresetIndex);
+            }
+        }
+
         parameters.replaceState (juce::ValueTree::fromXml (*xml));
     }
 }

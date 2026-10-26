@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Studio B",
+  "description": "Dry treated control room tail.",
+  "parameters": {
+    "mix": 16,
+    "predelay_ms": 5,
+    "decay_seconds": 0.55,
+    "size_percent": 34,
+    "mode": "Room"
+  }
+}

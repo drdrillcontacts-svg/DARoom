@@ -3,31 +3,198 @@
 
 namespace
 {
-    // Artwork geometry (653 x 184 reference image).
+    // ---- artwork geometry (653 x 184 reference image) -------------------------
     const juce::StringArray modeNames { "ROOM", "HALL", "PLATE", "CHAMBER", "AMBIENCE" };
-    const float modeLabelCentres[] = { 183.0f, 244.0f, 303.0f, 372.0f, 451.0f };
 
     const juce::Rectangle<int> mixReadout      { 23, 137, 38, 14 };
     const juce::Rectangle<int> predelayReadout { 99, 137, 54, 14 };
     const juce::Rectangle<int> decayReadout    { 495, 137, 58, 14 };
     const juce::Rectangle<int> sizeReadout     { 585, 137, 43, 14 };
+    const juce::Rectangle<int> titleArea       { 18, 12, 102, 20 };
+    const juce::Rectangle<int> titleTextRect   { 20, 12, 110, 21 };
     const juce::Rectangle<int> presetNameArea  { 250, 15, 150, 20 };
-    const juce::Rectangle<int> modeStripArea   { 168, 160, 322, 18 };
+    const juce::Rectangle<int> modeStripBox    { 168, 158, 322, 22 };
+    const juce::Rectangle<int> slotARect       { 576, 12, 26, 24 };
+    const juce::Rectangle<int> slotBRect       { 604, 12, 26, 24 };
     const juce::Rectangle<int> leftArrowArea   { 228, 14, 22, 22 };
     const juce::Rectangle<int> rightArrowArea  { 401, 14, 22, 22 };
 
-    // Colours sampled from the reference artwork so the erased regions blend in.
+    struct KnobGeom { juce::Point<float> centre; float radius; };
+    const KnobGeom knobs[4] = { { { 42.0f, 95.5f }, 23.0f },
+                                { { 126.0f, 95.5f }, 23.0f },
+                                { { 524.0f, 94.5f }, 23.0f },
+                                { { 606.0f, 94.5f }, 23.0f } };
+
+    // ---- colours sampled from the reference artwork --------------------------
     const juce::Colour mixEraseColour      { 0xff030e13 };
     const juce::Colour predelayEraseColour { 0xff040f14 };
     const juce::Colour decayEraseColour    { 0xff061117 };
     const juce::Colour sizeEraseColour     { 0xff030c11 };
     const juce::Colour presetEraseColour   { 0xff0b1a21 };
+    const juce::Colour titleTopColour      { 0xff040f15 };
+    const juce::Colour titleBottomColour   { 0xff030e13 };
+    const juce::Colour titleTextColour     { 0xffe8f4f7 };
     const juce::Colour stripTopColour      { 0xff071218 };
     const juce::Colour stripBottomColour   { 0xff050f15 };
     const juce::Colour modeIdleColour      { 0xff8b9aa2 };
     const juce::Colour modeActiveColour    { 0xffeef4f7 };
+    const juce::Colour knobFaceColour      { 0xff0a1118 };
+    const juce::Colour knobRimColour       { 0xff46545e };
+    const juce::Colour knobTrackColour     { 0xff1d2831 };
+    const juce::Colour knobValueColour     { 0xffd9e6ec };
+    const juce::Colour knobPointerColour   { 0xffe6f0f4 };
+    const juce::Colour slotActiveLine      { 0xffbfe3f2 };
+    const juce::Colour slotActiveFill      { 0x26ffffff };
 }
 
+//==============================================================================
+/** Mode selector drawn over the artwork strip: clicking a name selects it
+    directly - no popup menu, no dropdown arrow. */
+class DAroomAudioProcessorEditor::ModeStrip final : public juce::Component,
+                                                     private juce::Timer
+{
+public:
+    explicit ModeStrip (DAroomAudioProcessor& p) : processor (p) { startTimerHz (20); }
+
+    void paint (juce::Graphics& g) override
+    {
+        g.setGradientFill (juce::ColourGradient (stripTopColour, 0.0f, 0.0f,
+                                                 stripBottomColour, 0.0f, (float) getHeight(),
+                                                 false));
+        g.fillAll();
+
+        const int selected = currentMode();
+        const float w = (float) getWidth();
+        const float h = (float) getHeight();
+
+        for (int i = 0; i < modeNames.size(); ++i)
+        {
+            const bool active = (i == selected);
+            g.setColour (active ? modeActiveColour : modeIdleColour);
+            g.setFont (juce::Font (juce::FontOptions (h * (active ? 0.46f : 0.43f),
+                                                      active ? juce::Font::bold : juce::Font::plain)));
+            const float centre = proportions[i] * w;
+            g.drawText (modeNames[i],
+                        juce::Rectangle<int> ((int) (centre - w * 0.13f), (int) (h * 0.18f),
+                                              (int) (w * 0.26f), (int) (h * 0.64f)),
+                        juce::Justification::centred, false);
+        }
+    }
+
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        const float x = (float) e.getPosition().x;
+        int best = 0;
+        float bestDistance = 1.0e9f;
+
+        for (int i = 0; i < 5; ++i)
+        {
+            const float d = std::abs (proportions[i] * (float) getWidth() - x);
+            if (d < bestDistance) { bestDistance = d; best = i; }
+        }
+
+        setMode (best);
+    }
+
+private:
+    int currentMode() const
+    {
+        return juce::jlimit (0, 4, (int) processor.parameters.getRawParameterValue ("mode")->load());
+    }
+
+    void setMode (int m)
+    {
+        if (m == currentMode())
+            return;
+
+        if (auto* p = processor.parameters.getParameter ("mode"))
+        {
+            p->beginChangeGesture();
+            p->setValueNotifyingHost (p->convertTo0to1 ((float) m));
+            p->endChangeGesture();
+        }
+    }
+
+    void timerCallback() override
+    {
+        const int m = currentMode();
+        if (m != lastMode) { lastMode = m; repaint(); }
+    }
+
+    DAroomAudioProcessor& processor;
+    int lastMode = -1;
+
+    // label centres of the artwork strip, as proportions of the strip width
+    static constexpr float proportions[5] = { 15.0f / 322.0f, 76.0f / 322.0f, 135.0f / 322.0f,
+                                              204.0f / 322.0f, 283.0f / 322.0f };
+};
+
+//==============================================================================
+/** A/B slot pad: click = switch (empty slots capture the current sound),
+    double-click = store the current sound into the slot. */
+class DAroomAudioProcessorEditor::SlotButton final : public juce::Component
+{
+public:
+    SlotButton (DAroomAudioProcessor& p, int slotIndex, std::function<void()> onChanged)
+        : processor (p), slot (slotIndex), onChange (std::move (onChanged)) {}
+
+    void paint (juce::Graphics& g) override
+    {
+        if (processor.getActiveSlot() != slot)
+            return;
+
+        const auto r = getLocalBounds().toFloat().reduced (1.0f);
+        g.setColour (slotActiveFill);
+        g.fillRoundedRectangle (r, 5.0f);
+        g.setColour (slotActiveLine);
+        g.drawRoundedRectangle (r, 5.0f, 1.5f);
+    }
+
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        if (e.getNumberOfClicks() >= 2)
+            processor.storeSlot (slot);
+        else
+            processor.selectSlot (slot);
+
+        if (onChange != nullptr)
+            onChange();
+    }
+
+private:
+    DAroomAudioProcessor& processor;
+    int slot;
+    std::function<void()> onChange;
+};
+
+//==============================================================================
+/** Keeps the editor at the artwork's aspect ratio while allowing free resizing. */
+class AspectRatioConstrainer final : public juce::ComponentBoundsConstrainer
+{
+public:
+    AspectRatioConstrainer (double ratioIn, int minWidthIn, int maxWidthIn)
+        : ratio (ratioIn), minW (minWidthIn), maxW (maxWidthIn) {}
+
+    void checkBounds (juce::Rectangle<int>& bounds,
+                      const juce::Rectangle<int>& previous,
+                      const juce::Rectangle<int>&,
+                      bool isStretchingTop, bool isStretchingLeft, bool, bool) override
+    {
+        const int w = juce::jlimit (minW, maxW, bounds.getWidth());
+        const int h = juce::jlimit (juce::roundToInt ((double) minW / ratio),
+                                    juce::roundToInt ((double) maxW / ratio),
+                                    juce::roundToInt ((double) w / ratio));
+        const int x = isStretchingLeft ? previous.getRight() - w : previous.getX();
+        const int y = isStretchingTop  ? previous.getBottom() - h : previous.getY();
+        bounds = { x, y, w, h };
+    }
+
+private:
+    double ratio;
+    int minW, maxW;
+};
+
+//==============================================================================
 juce::Array<DAroomAudioProcessorEditor::PresetDef> DAroomAudioProcessorEditor::loadFactoryPresets()
 {
     struct Resource { const char* file; const char* data; int size; };
@@ -36,42 +203,56 @@ juce::Array<DAroomAudioProcessorEditor::PresetDef> DAroomAudioProcessorEditor::l
     // the plug-in and the on-disk presets can never drift apart.
     static const Resource resources[] =
     {
-    { "small-studio.drpreset", BinaryData::smallstudio_drpreset, BinaryData::smallstudio_drpresetSize },  // 1: Small Studio
-    { "vocal-booth.drpreset", BinaryData::vocalbooth_drpreset, BinaryData::vocalbooth_drpresetSize },  // 2: Vocal Booth
-    { "living-room.drpreset", BinaryData::livingroom_drpreset, BinaryData::livingroom_drpresetSize },  // 3: Living Room
-    { "wood-room.drpreset", BinaryData::woodroom_drpreset, BinaryData::woodroom_drpresetSize },  // 4: Wood Room
-    { "drum-room.drpreset", BinaryData::drumroom_drpreset, BinaryData::drumroom_drpresetSize },  // 5: Drum Room
-    { "bright-room.drpreset", BinaryData::brightroom_drpreset, BinaryData::brightroom_drpresetSize },  // 6: Bright Room
-    { "tight-booth.drpreset", BinaryData::tightbooth_drpreset, BinaryData::tightbooth_drpresetSize },  // 7: Tight Booth
-    { "tracking-room.drpreset", BinaryData::trackingroom_drpreset, BinaryData::trackingroom_drpresetSize },  // 8: Tracking Room
-    { "small-hall.drpreset", BinaryData::smallhall_drpreset, BinaryData::smallhall_drpresetSize },  // 9: Small Hall
-    { "concert-hall.drpreset", BinaryData::concerthall_drpreset, BinaryData::concerthall_drpresetSize },  // 10: Concert Hall
-    { "dark-hall.drpreset", BinaryData::darkhall_drpreset, BinaryData::darkhall_drpresetSize },  // 11: Dark Hall
-    { "bright-hall.drpreset", BinaryData::brighthall_drpreset, BinaryData::brighthall_drpresetSize },  // 12: Bright Hall
-    { "cathedral.drpreset", BinaryData::cathedral_drpreset, BinaryData::cathedral_drpresetSize },  // 13: Cathedral
-    { "arena.drpreset", BinaryData::arena_drpreset, BinaryData::arena_drpresetSize },  // 14: Arena
-    { "vintage-plate.drpreset", BinaryData::vintageplate_drpreset, BinaryData::vintageplate_drpresetSize },  // 15: Vintage Plate
-    { "vocal-plate.drpreset", BinaryData::vocalplate_drpreset, BinaryData::vocalplate_drpresetSize },  // 16: Vocal Plate
-    { "bright-plate.drpreset", BinaryData::brightplate_drpreset, BinaryData::brightplate_drpresetSize },  // 17: Bright Plate
-    { "drum-plate.drpreset", BinaryData::drumplate_drpreset, BinaryData::drumplate_drpresetSize },  // 18: Drum Plate
-    { "deep-chamber.drpreset", BinaryData::deepchamber_drpreset, BinaryData::deepchamber_drpresetSize },  // 19: Deep Chamber
-    { "stone-chamber.drpreset", BinaryData::stonechamber_drpreset, BinaryData::stonechamber_drpresetSize },  // 20: Stone Chamber
-    { "warm-chamber.drpreset", BinaryData::warmchamber_drpreset, BinaryData::warmchamber_drpresetSize },  // 21: Warm Chamber
-    { "dark-chamber.drpreset", BinaryData::darkchamber_drpreset, BinaryData::darkchamber_drpresetSize },  // 22: Dark Chamber
-    { "gold-chamber.drpreset", BinaryData::goldchamber_drpreset, BinaryData::goldchamber_drpresetSize },  // 23: Gold Chamber
-    { "ambient-cloud.drpreset", BinaryData::ambientcloud_drpreset, BinaryData::ambientcloud_drpresetSize },  // 24: Ambient Cloud
-    { "dream-space.drpreset", BinaryData::dreamspace_drpreset, BinaryData::dreamspace_drpresetSize },  // 25: Dream Space
-    { "cosmic-drift.drpreset", BinaryData::cosmicdrift_drpreset, BinaryData::cosmicdrift_drpresetSize },  // 26: Cosmic Drift
-    { "frozen-air.drpreset", BinaryData::frozenair_drpreset, BinaryData::frozenair_drpresetSize },  // 27: Frozen Air
-    { "soft-focus.drpreset", BinaryData::softfocus_drpreset, BinaryData::softfocus_drpresetSize },  // 28: Soft Focus
-    { "wide-synth.drpreset", BinaryData::widesynth_drpreset, BinaryData::widesynth_drpresetSize },  // 29: Wide Synth
-    { "cinematic-impact.drpreset", BinaryData::cinematicimpact_drpreset, BinaryData::cinematicimpact_drpresetSize },  // 30: Cinematic Impact
-    { "piano-bloom.drpreset", BinaryData::pianobloom_drpreset, BinaryData::pianobloom_drpresetSize },  // 31: Piano Bloom
-    { "guitar-springless.drpreset", BinaryData::guitarspringless_drpreset, BinaryData::guitarspringless_drpresetSize },  // 32: Guitar Springless
-    { "snare-bloom.drpreset", BinaryData::snarebloom_drpreset, BinaryData::snarebloom_drpresetSize },  // 33: Snare Bloom
-    { "orchestral-depth.drpreset", BinaryData::orchestraldepth_drpreset, BinaryData::orchestraldepth_drpresetSize },  // 34: Orchestral Depth
-    { "whisper-room.drpreset", BinaryData::whisperroom_drpreset, BinaryData::whisperroom_drpresetSize },  // 35: Whisper Room
-    { "endless-horizon.drpreset", BinaryData::endlesshorizon_drpreset, BinaryData::endlesshorizon_drpresetSize },  // 36: Endless Horizon
+    { "small-studio.drpreset", BinaryData::smallstudio_drpreset, BinaryData::smallstudio_drpresetSize },  // 1: Small Studio [Rooms]
+    { "vocal-booth.drpreset", BinaryData::vocalbooth_drpreset, BinaryData::vocalbooth_drpresetSize },  // 2: Vocal Booth [Rooms]
+    { "living-room.drpreset", BinaryData::livingroom_drpreset, BinaryData::livingroom_drpresetSize },  // 3: Living Room [Rooms]
+    { "wood-room.drpreset", BinaryData::woodroom_drpreset, BinaryData::woodroom_drpresetSize },  // 4: Wood Room [Rooms]
+    { "drum-room.drpreset", BinaryData::drumroom_drpreset, BinaryData::drumroom_drpresetSize },  // 5: Drum Room [Rooms]
+    { "bright-room.drpreset", BinaryData::brightroom_drpreset, BinaryData::brightroom_drpresetSize },  // 6: Bright Room [Rooms]
+    { "tight-booth.drpreset", BinaryData::tightbooth_drpreset, BinaryData::tightbooth_drpresetSize },  // 7: Tight Booth [Rooms]
+    { "tracking-room.drpreset", BinaryData::trackingroom_drpreset, BinaryData::trackingroom_drpresetSize },  // 8: Tracking Room [Rooms]
+    { "whisper-room.drpreset", BinaryData::whisperroom_drpreset, BinaryData::whisperroom_drpresetSize },  // 9: Whisper Room [Rooms]
+    { "cozy-loft.drpreset", BinaryData::cozyloft_drpreset, BinaryData::cozyloft_drpresetSize },  // 10: Cozy Loft [Rooms]
+    { "brick-garage.drpreset", BinaryData::brickgarage_drpreset, BinaryData::brickgarage_drpresetSize },  // 11: Brick Garage [Rooms]
+    { "studio-b.drpreset", BinaryData::studiob_drpreset, BinaryData::studiob_drpresetSize },  // 12: Studio B [Rooms]
+    { "small-hall.drpreset", BinaryData::smallhall_drpreset, BinaryData::smallhall_drpresetSize },  // 13: Small Hall [Halls]
+    { "concert-hall.drpreset", BinaryData::concerthall_drpreset, BinaryData::concerthall_drpresetSize },  // 14: Concert Hall [Halls]
+    { "dark-hall.drpreset", BinaryData::darkhall_drpreset, BinaryData::darkhall_drpresetSize },  // 15: Dark Hall [Halls]
+    { "bright-hall.drpreset", BinaryData::brighthall_drpreset, BinaryData::brighthall_drpresetSize },  // 16: Bright Hall [Halls]
+    { "cathedral.drpreset", BinaryData::cathedral_drpreset, BinaryData::cathedral_drpresetSize },  // 17: Cathedral [Halls]
+    { "arena.drpreset", BinaryData::arena_drpreset, BinaryData::arena_drpresetSize },  // 18: Arena [Halls]
+    { "piano-bloom.drpreset", BinaryData::pianobloom_drpreset, BinaryData::pianobloom_drpresetSize },  // 19: Piano Bloom [Halls]
+    { "orchestral-depth.drpreset", BinaryData::orchestraldepth_drpreset, BinaryData::orchestraldepth_drpresetSize },  // 20: Orchestral Depth [Halls]
+    { "grand-hall.drpreset", BinaryData::grandhall_drpreset, BinaryData::grandhall_drpresetSize },  // 21: Grand Hall [Halls]
+    { "nordic-hall.drpreset", BinaryData::nordichall_drpreset, BinaryData::nordichall_drpresetSize },  // 22: Nordic Hall [Halls]
+    { "opera-house.drpreset", BinaryData::operahouse_drpreset, BinaryData::operahouse_drpresetSize },  // 23: Opera House [Halls]
+    { "tape-bloom.drpreset", BinaryData::tapebloom_drpreset, BinaryData::tapebloom_drpresetSize },  // 24: Tape Bloom [Halls]
+    { "vintage-plate.drpreset", BinaryData::vintageplate_drpreset, BinaryData::vintageplate_drpresetSize },  // 25: Vintage Plate [Plates]
+    { "vocal-plate.drpreset", BinaryData::vocalplate_drpreset, BinaryData::vocalplate_drpresetSize },  // 26: Vocal Plate [Plates]
+    { "bright-plate.drpreset", BinaryData::brightplate_drpreset, BinaryData::brightplate_drpresetSize },  // 27: Bright Plate [Plates]
+    { "drum-plate.drpreset", BinaryData::drumplate_drpreset, BinaryData::drumplate_drpresetSize },  // 28: Drum Plate [Plates]
+    { "guitar-springless.drpreset", BinaryData::guitarspringless_drpreset, BinaryData::guitarspringless_drpresetSize },  // 29: Guitar Springless [Plates]
+    { "snare-bloom.drpreset", BinaryData::snarebloom_drpreset, BinaryData::snarebloom_drpresetSize },  // 30: Snare Bloom [Plates]
+    { "silver-plate.drpreset", BinaryData::silverplate_drpreset, BinaryData::silverplate_drpresetSize },  // 31: Silver Plate [Plates]
+    { "studio-plate.drpreset", BinaryData::studioplate_drpreset, BinaryData::studioplate_drpresetSize },  // 32: Studio Plate [Plates]
+    { "deep-chamber.drpreset", BinaryData::deepchamber_drpreset, BinaryData::deepchamber_drpresetSize },  // 33: Deep Chamber [Chambers]
+    { "stone-chamber.drpreset", BinaryData::stonechamber_drpreset, BinaryData::stonechamber_drpresetSize },  // 34: Stone Chamber [Chambers]
+    { "warm-chamber.drpreset", BinaryData::warmchamber_drpreset, BinaryData::warmchamber_drpresetSize },  // 35: Warm Chamber [Chambers]
+    { "dark-chamber.drpreset", BinaryData::darkchamber_drpreset, BinaryData::darkchamber_drpresetSize },  // 36: Dark Chamber [Chambers]
+    { "gold-chamber.drpreset", BinaryData::goldchamber_drpreset, BinaryData::goldchamber_drpresetSize },  // 37: Gold Chamber [Chambers]
+    { "echo-chamber.drpreset", BinaryData::echochamber_drpreset, BinaryData::echochamber_drpresetSize },  // 38: Echo Chamber [Chambers]
+    { "marble-chamber.drpreset", BinaryData::marblechamber_drpreset, BinaryData::marblechamber_drpresetSize },  // 39: Marble Chamber [Chambers]
+    { "ambient-cloud.drpreset", BinaryData::ambientcloud_drpreset, BinaryData::ambientcloud_drpresetSize },  // 40: Ambient Cloud [Ambiences]
+    { "dream-space.drpreset", BinaryData::dreamspace_drpreset, BinaryData::dreamspace_drpresetSize },  // 41: Dream Space [Ambiences]
+    { "cosmic-drift.drpreset", BinaryData::cosmicdrift_drpreset, BinaryData::cosmicdrift_drpresetSize },  // 42: Cosmic Drift [Ambiences]
+    { "frozen-air.drpreset", BinaryData::frozenair_drpreset, BinaryData::frozenair_drpresetSize },  // 43: Frozen Air [Ambiences]
+    { "soft-focus.drpreset", BinaryData::softfocus_drpreset, BinaryData::softfocus_drpresetSize },  // 44: Soft Focus [Ambiences]
+    { "wide-synth.drpreset", BinaryData::widesynth_drpreset, BinaryData::widesynth_drpresetSize },  // 45: Wide Synth [Ambiences]
+    { "cinematic-impact.drpreset", BinaryData::cinematicimpact_drpreset, BinaryData::cinematicimpact_drpresetSize },  // 46: Cinematic Impact [Ambiences]
+    { "endless-horizon.drpreset", BinaryData::endlesshorizon_drpreset, BinaryData::endlesshorizon_drpresetSize },  // 47: Endless Horizon [Ambiences]
+    { "airy-pad.drpreset", BinaryData::airypad_drpreset, BinaryData::airypad_drpresetSize },  // 48: Airy Pad [Ambiences]
+    { "nebula.drpreset", BinaryData::nebula_drpreset, BinaryData::nebula_drpresetSize },  // 49: Nebula [Ambiences]
+    { "glacier.drpreset", BinaryData::glacier_drpreset, BinaryData::glacier_drpresetSize },  // 50: Glacier [Ambiences]
     };
 
     const juce::StringArray modeStrings { "Room", "Hall", "Plate", "Chamber", "Ambience" };
@@ -106,14 +287,15 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
     factoryPresets = loadFactoryPresets();
 
     setSize (653, 184);
-    setResizable (false, false);
+    setResizable (true, true);
+    aspectConstrainer = std::make_unique<AspectRatioConstrainer> (653.0 / 184.0, 457, 1959);
+    setConstrainer (aspectConstrainer.get());
 
     styleSlider (mix, "MIX");
     styleSlider (predelay, "PREDELAY");
     styleSlider (decay, "DECAY");
     styleSlider (size, "SIZE");
 
-    // Transparent rotary hit areas sit over the knobs in the supplied artwork.
     addAndMakeVisible (mix);
     addAndMakeVisible (predelay);
     addAndMakeVisible (decay);
@@ -125,11 +307,16 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
         addAndMakeVisible (*label);
     }
 
-    // Preset browser: id 1 = "Manual", ids 2..37 = factory presets, so the
-    // selection can be persisted as (id - 1) inside the plug-in state.
+    // Preset browser grouped by space type: id 1 = "Manual", ids 2..51 = presets.
     presetSelector.addItem ("Manual", 1);
-    for (int i = 0; i < factoryPresets.size(); ++i)
-        presetSelector.addItem (factoryPresets[i].name, i + 2);
+    const juce::StringArray headings { "Rooms", "Halls", "Plates", "Chambers", "Ambiences" };
+    for (int m = 0; m < headings.size(); ++m)
+    {
+        presetSelector.addSectionHeading (headings[m]);
+        for (int i = 0; i < factoryPresets.size(); ++i)
+            if (factoryPresets[i].mode == m)
+                presetSelector.addItem (factoryPresets[i].name, i + 2);
+    }
 
     presetSelector.setJustificationType (juce::Justification::centred);
     presetSelector.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0x00ffffff));
@@ -146,21 +333,20 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
     };
     addAndMakeVisible (presetSelector);
 
-    for (int i = 0; i < modeNames.size(); ++i)
-        mode.addItem (modeNames[i], i + 1);
-    mode.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0x00ffffff));
-    mode.setColour (juce::ComboBox::textColourId, juce::Colour (0x00ffffff)); // strip is redrawn in paint()
-    mode.setColour (juce::ComboBox::outlineColourId, juce::Colour (0x00ffffff));
-    mode.setColour (juce::ComboBox::arrowColourId, juce::Colour (0x00ffffff));
-    mode.onChange = [this] { repaint (modeStripArea); };
-    addAndMakeVisible (mode);
+    modeStrip = std::make_unique<ModeStrip> (audioProcessor);
+    addAndMakeVisible (*modeStrip);
+
+    const auto slotChanged = [this] { syncPresetCombo(); repaint(); };
+    slotA = std::make_unique<SlotButton> (audioProcessor, 0, slotChanged);
+    slotB = std::make_unique<SlotButton> (audioProcessor, 1, slotChanged);
+    addAndMakeVisible (*slotA);
+    addAndMakeVisible (*slotB);
 
     auto& state = audioProcessor.parameters;
     mixAttachment      = std::make_unique<SliderAttachment> (state, "mix", mix);
     predelayAttachment = std::make_unique<SliderAttachment> (state, "predelay", predelay);
     decayAttachment    = std::make_unique<SliderAttachment> (state, "decay", decay);
     sizeAttachment     = std::make_unique<SliderAttachment> (state, "size", size);
-    modeAttachment     = std::make_unique<ComboAttachment> (state, "mode", mode);
 
     // Restore the last recalled preset name (or the artwork default).
     int stored = audioProcessor.getPresetIndex();
@@ -180,6 +366,7 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
         predelayValue.setText (juce::String (predelay.getValue(), 0) + " ms", juce::dontSendNotification);
         decayValue.setText (juce::String (decay.getValue(), 2) + " s", juce::dontSendNotification);
         sizeValue.setText (juce::String (size.getValue(), 0) + "%", juce::dontSendNotification);
+        repaintKnobs();
     };
     const auto dragStarted = [this] { markManual(); };
 
@@ -210,6 +397,12 @@ void DAroomAudioProcessorEditor::markManual()
     presetSelector.setSelectedId (1, juce::dontSendNotification);
 }
 
+void DAroomAudioProcessorEditor::syncPresetCombo()
+{
+    const int idx = juce::jlimit (0, factoryPresets.size(), audioProcessor.getPresetIndex());
+    presetSelector.setSelectedId (idx + 1, juce::dontSendNotification);
+}
+
 void DAroomAudioProcessorEditor::stepPreset (int delta)
 {
     const int count = factoryPresets.size();
@@ -228,12 +421,12 @@ void DAroomAudioProcessorEditor::stepPreset (int delta)
 void DAroomAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
 {
     // The artwork's < > arrows step through the factory presets.
-    if (leftArrowArea.contains (e.getPosition()))
+    if (scaled (leftArrowArea).contains (e.getPosition()))
     {
         stepPreset (-1);
         return;
     }
-    if (rightArrowArea.contains (e.getPosition()))
+    if (scaled (rightArrowArea).contains (e.getPosition()))
     {
         stepPreset (1);
         return;
@@ -261,6 +454,54 @@ void DAroomAudioProcessorEditor::styleValue (juce::Label& l)
     l.setInterceptsMouseClicks (false, false);
 }
 
+juce::Rectangle<int> DAroomAudioProcessorEditor::scaled (juce::Rectangle<int> base) const
+{
+    return { juce::roundToInt ((float) base.getX() * uiScale),
+             juce::roundToInt ((float) base.getY() * uiScale),
+             juce::roundToInt ((float) base.getWidth() * uiScale),
+             juce::roundToInt ((float) base.getHeight() * uiScale) };
+}
+
+void DAroomAudioProcessorEditor::repaintKnobs()
+{
+    for (const auto& k : knobs)
+        repaint (scaled ({ (int) (k.centre.x - k.radius), (int) (k.centre.y - k.radius),
+                           (int) (k.radius * 2.0f), (int) (k.radius * 2.0f) }));
+}
+
+void DAroomAudioProcessorEditor::drawKnob (juce::Graphics& g, juce::Point<float> centre,
+                                           float radius, float proportion)
+{
+    const auto face = juce::Rectangle<float> (centre.x - radius, centre.y - radius,
+                                              radius * 2.0f, radius * 2.0f);
+    g.setColour (knobFaceColour);
+    g.fillEllipse (face);
+    g.setColour (knobRimColour);
+    g.drawEllipse (face.reduced (0.6f), 1.2f);
+
+    const float start = 0.75f * juce::MathConstants<float>::pi;
+    const float end   = 2.25f * juce::MathConstants<float>::pi;
+    const float sweep = start + juce::jlimit (0.0f, 1.0f, proportion) * (end - start);
+    const float arcR  = radius - 4.5f;
+
+    juce::Path track;
+    track.addCentredArc (centre.x, centre.y, arcR, arcR, 0.0f, start, end, false);
+    g.setColour (knobTrackColour);
+    g.strokePath (track, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    if (proportion > 0.001f)
+    {
+        juce::Path value;
+        value.addCentredArc (centre.x, centre.y, arcR, arcR, 0.0f, start, sweep, false);
+        g.setColour (knobValueColour);
+        g.strokePath (value, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+
+    const auto dir = juce::Point<float> (std::cos (sweep), std::sin (sweep));
+    g.setColour (knobPointerColour);
+    g.drawLine ({ centre + dir * (radius * 0.30f), centre + dir * (radius * 0.62f) }, 2.5f);
+}
+
 void DAroomAudioProcessorEditor::paint (juce::Graphics& g)
 {
     if (background.isValid())
@@ -268,54 +509,53 @@ void DAroomAudioProcessorEditor::paint (juce::Graphics& g)
     else
         g.fillAll (juce::Colour (0xff071018));
 
-    // The artwork bakes static readouts ("26%", "25 ms", ...) into the image.
-    // Erase them with sampled background colours so the live value labels do
-    // not draw on top of stale numbers.
+    // Everything below is drawn in artwork (653 x 184) coordinates.
+    g.addTransform (juce::AffineTransform::scale (uiScale));
+
+    // The artwork bakes a static title and readouts into the image; erase them
+    // with sampled background colours and redraw live content on top.
+    g.setGradientFill (juce::ColourGradient (titleTopColour,
+                                             (float) titleArea.getX(), (float) titleArea.getY(),
+                                             titleBottomColour,
+                                             (float) titleArea.getX(), (float) titleArea.getBottom(),
+                                             false));
+    g.fillRect (titleArea);
+    g.setColour (titleTextColour);
+    g.setFont (juce::Font (juce::FontOptions (20.0f)));
+    g.drawText ("D.A Room", titleTextRect, juce::Justification::centredLeft, false);
+
     g.setColour (mixEraseColour);      g.fillRect (mixReadout);
     g.setColour (predelayEraseColour); g.fillRect (predelayReadout);
     g.setColour (decayEraseColour);    g.fillRect (decayReadout);
     g.setColour (sizeEraseColour);     g.fillRect (sizeReadout);
     g.setColour (presetEraseColour);   g.fillRect (presetNameArea);
 
-    // Redraw the mode strip with the *active* mode highlighted (the artwork
-    // always shows CHAMBER selected).
-    g.setGradientFill (juce::ColourGradient (stripTopColour,
-                                             (float) modeStripArea.getX(), (float) modeStripArea.getY(),
-                                             stripBottomColour,
-                                             (float) modeStripArea.getX(), (float) modeStripArea.getBottom(),
-                                             false));
-    g.fillRect (modeStripArea);
-
-    const int selected = juce::jlimit (0, modeNames.size() - 1, mode.getSelectedItemIndex());
-
-    for (int i = 0; i < modeNames.size(); ++i)
-    {
-        const bool active = (i == selected);
-        g.setColour (active ? modeActiveColour : modeIdleColour);
-        g.setFont (juce::Font (juce::FontOptions (active ? 10.0f : 9.5f,
-                                                  active ? juce::Font::bold : juce::Font::plain)));
-        g.drawText (modeNames[i],
-                    juce::Rectangle<int> ((int) modeLabelCentres[i] - 40, modeStripArea.getY() + 3, 80, 13),
-                    juce::Justification::centred, false);
-    }
+    // Live rotary indicators over the baked knob artwork.
+    juce::Slider* sliders[4] = { &mix, &predelay, &decay, &size };
+    for (int i = 0; i < 4; ++i)
+        drawKnob (g, knobs[i].centre, knobs[i].radius,
+                  (float) sliders[i]->valueToProportionOfLength (sliders[i]->getValue()));
 }
 
 void DAroomAudioProcessorEditor::resized()
 {
-    // Hit regions align to the four rotary controls in the exact supplied image.
-    mix.setBounds (17, 72, 50, 47);
-    predelay.setBounds (100, 72, 52, 47);
-    decay.setBounds (497, 70, 54, 49);
-    size.setBounds (579, 70, 54, 49);
+    uiScale = (float) getWidth() / 653.0f;
 
-    // Value overlays replace the baked-in static values, so the numbers follow controls.
-    mixValue.setBounds (mixReadout);
-    predelayValue.setBounds (predelayReadout);
-    decayValue.setBounds (decayReadout);
-    sizeValue.setBounds (sizeReadout);
+    mix.setBounds (scaled ({ 17, 72, 50, 47 }));
+    predelay.setBounds (scaled ({ 100, 72, 52, 47 }));
+    decay.setBounds (scaled ({ 497, 70, 54, 49 }));
+    size.setBounds (scaled ({ 579, 70, 54, 49 }));
 
-    // The mode selector overlays the mode strip from the artwork; the preset
-    // browser covers the name area between the two arrows.
-    mode.setBounds (modeStripArea.withY (modeStripArea.getY() - 2).withHeight (22));
-    presetSelector.setBounds (presetNameArea);
+    const juce::Rectangle<int> readouts[4] = { mixReadout, predelayReadout, decayReadout, sizeReadout };
+    juce::Label* labels[4] = { &mixValue, &predelayValue, &decayValue, &sizeValue };
+    for (int i = 0; i < 4; ++i)
+    {
+        labels[i]->setBounds (scaled (readouts[i]));
+        labels[i]->setFont (juce::Font (juce::FontOptions (10.0f * uiScale)));
+    }
+
+    presetSelector.setBounds (scaled (presetNameArea));
+    modeStrip->setBounds (scaled (modeStripBox));
+    slotA->setBounds (scaled (slotARect));
+    slotB->setBounds (scaled (slotBRect));
 }

@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Tape Bloom",
+  "description": "Hall tail with saturated tape bloom.",
+  "parameters": {
+    "mix": 27,
+    "predelay_ms": 14,
+    "decay_seconds": 2.8,
+    "size_percent": 64,
+    "mode": "Hall"
+  }
+}

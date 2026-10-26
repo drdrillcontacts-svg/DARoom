@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Cozy Loft",
+  "description": "Intimate loft with soft wooden reflections.",
+  "parameters": {
+    "mix": 20,
+    "predelay_ms": 10,
+    "decay_seconds": 0.8,
+    "size_percent": 44,
+    "mode": "Room"
+  }
+}

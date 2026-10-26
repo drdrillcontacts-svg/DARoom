@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Airy Pad",
+  "description": "Weightless ambient air for pads.",
+  "parameters": {
+    "mix": 34,
+    "predelay_ms": 28,
+    "decay_seconds": 6.2,
+    "size_percent": 88,
+    "mode": "Ambience"
+  }
+}

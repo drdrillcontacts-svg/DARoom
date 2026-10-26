@@ -1,0 +1,13 @@
+{
+  "format": "DAroomPreset",
+  "version": 1,
+  "name": "Brick Garage",
+  "description": "Loose garage space with brick slap.",
+  "parameters": {
+    "mix": 24,
+    "predelay_ms": 6,
+    "decay_seconds": 0.7,
+    "size_percent": 50,
+    "mode": "Room"
+  }
+}
