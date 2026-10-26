@@ -32,8 +32,7 @@ private:
     juce::Array<PresetDef> factoryPresets;
     std::unique_ptr<ModeStrip> modeStrip;
     std::unique_ptr<SlotButton> slotA, slotB;
-    std::unique_ptr<juce::ComponentBoundsConstrainer> aspectConstrainer;
-    float uiScale = 1.0f;
+    float uiScaleX = 1.0f, uiScaleY = 1.0f;
 
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<SliderAttachment> mixAttachment, predelayAttachment, decayAttachment, sizeAttachment;

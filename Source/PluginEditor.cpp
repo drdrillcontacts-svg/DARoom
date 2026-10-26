@@ -167,32 +167,21 @@ private:
     std::function<void()> onChange;
 };
 
-//==============================================================================
-/** Keeps the editor at the artwork's aspect ratio while allowing free resizing. */
-class AspectRatioConstrainer final : public juce::ComponentBoundsConstrainer
+namespace
 {
-public:
-    AspectRatioConstrainer (double ratioIn, int minWidthIn, int maxWidthIn)
-        : ratio (ratioIn), minW (minWidthIn), maxW (maxWidthIn) {}
-
-    void checkBounds (juce::Rectangle<int>& bounds,
-                      const juce::Rectangle<int>& previous,
-                      const juce::Rectangle<int>&,
-                      bool isStretchingTop, bool isStretchingLeft, bool, bool) override
+    /** Appends a line to a small log file so editor-creation problems can be
+        diagnosed on the user's machine (Documents/DARoom-editor.log). */
+    void appendEditorLog (const juce::String& message)
     {
-        const int w = juce::jlimit (minW, maxW, bounds.getWidth());
-        const int h = juce::jlimit (juce::roundToInt ((double) minW / ratio),
-                                    juce::roundToInt ((double) maxW / ratio),
-                                    juce::roundToInt ((double) w / ratio));
-        const int x = isStretchingLeft ? previous.getRight() - w : previous.getX();
-        const int y = isStretchingTop  ? previous.getBottom() - h : previous.getY();
-        bounds = { x, y, w, h };
+        try
+        {
+            auto log = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                         .getChildFile ("DARoom-editor.log");
+            log.appendText (juce::Time::getCurrentTime().toString (true, true) + "  " + message + juce::newLine);
+        }
+        catch (...) {}
     }
-
-private:
-    double ratio;
-    int minW, maxW;
-};
+}
 
 //==============================================================================
 juce::Array<DAroomAudioProcessorEditor::PresetDef> DAroomAudioProcessorEditor::loadFactoryPresets()
@@ -286,10 +275,13 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
                                                   BinaryData::DAroom_UI_Reference_pngSize);
     factoryPresets = loadFactoryPresets();
 
+    const juce::PluginHostType hostType;
+    appendEditorLog ("editor constructing; host=" + juce::String (hostType.getHostDescription())
+                     + "; os=" + juce::SystemStats::getOperatingSystemName());
+
     setSize (653, 184);
     setResizable (true, true);
-    aspectConstrainer = std::make_unique<AspectRatioConstrainer> (653.0 / 184.0, 457, 1959);
-    setConstrainer (aspectConstrainer.get());
+    setResizeLimits (457, 129, 1959, 552);
 
     styleSlider (mix, "MIX");
     styleSlider (predelay, "PREDELAY");
@@ -379,6 +371,10 @@ DAroomAudioProcessorEditor::DAroomAudioProcessorEditor (DAroomAudioProcessor& p)
     decay.onDragStart = dragStarted;
     size.onDragStart = dragStarted;
     updateValues();
+
+    appendEditorLog ("editor ready; background=" + juce::String (background.isValid() ? "ok" : "MISSING")
+                     + "; presets=" + juce::String (factoryPresets.size())
+                     + "; size=" + juce::String (getWidth()) + "x" + juce::String (getHeight()));
 }
 
 void DAroomAudioProcessorEditor::recallPreset (int presetIndex)
@@ -456,10 +452,10 @@ void DAroomAudioProcessorEditor::styleValue (juce::Label& l)
 
 juce::Rectangle<int> DAroomAudioProcessorEditor::scaled (juce::Rectangle<int> base) const
 {
-    return { juce::roundToInt ((float) base.getX() * uiScale),
-             juce::roundToInt ((float) base.getY() * uiScale),
-             juce::roundToInt ((float) base.getWidth() * uiScale),
-             juce::roundToInt ((float) base.getHeight() * uiScale) };
+    return { juce::roundToInt ((float) base.getX() * uiScaleX),
+             juce::roundToInt ((float) base.getY() * uiScaleY),
+             juce::roundToInt ((float) base.getWidth() * uiScaleX),
+             juce::roundToInt ((float) base.getHeight() * uiScaleY) };
 }
 
 void DAroomAudioProcessorEditor::repaintKnobs()
@@ -510,7 +506,7 @@ void DAroomAudioProcessorEditor::paint (juce::Graphics& g)
         g.fillAll (juce::Colour (0xff071018));
 
     // Everything below is drawn in artwork (653 x 184) coordinates.
-    g.addTransform (juce::AffineTransform::scale (uiScale));
+    g.addTransform (juce::AffineTransform::scale (uiScaleX, uiScaleY));
 
     // The artwork bakes a static title and readouts into the image; erase them
     // with sampled background colours and redraw live content on top.
@@ -521,7 +517,7 @@ void DAroomAudioProcessorEditor::paint (juce::Graphics& g)
                                              false));
     g.fillRect (titleArea);
     g.setColour (titleTextColour);
-    g.setFont (juce::Font (juce::FontOptions (20.0f)));
+    g.setFont (juce::Font (juce::FontOptions (20.0f * uiScaleY)));
     g.drawText ("D.A Room", titleTextRect, juce::Justification::centredLeft, false);
 
     g.setColour (mixEraseColour);      g.fillRect (mixReadout);
@@ -539,7 +535,8 @@ void DAroomAudioProcessorEditor::paint (juce::Graphics& g)
 
 void DAroomAudioProcessorEditor::resized()
 {
-    uiScale = (float) getWidth() / 653.0f;
+    uiScaleX = (float) getWidth()  / 653.0f;
+    uiScaleY = (float) getHeight() / 184.0f;
 
     mix.setBounds (scaled ({ 17, 72, 50, 47 }));
     predelay.setBounds (scaled ({ 100, 72, 52, 47 }));
@@ -551,7 +548,7 @@ void DAroomAudioProcessorEditor::resized()
     for (int i = 0; i < 4; ++i)
     {
         labels[i]->setBounds (scaled (readouts[i]));
-        labels[i]->setFont (juce::Font (juce::FontOptions (10.0f * uiScale)));
+        labels[i]->setFont (juce::Font (juce::FontOptions (10.0f * uiScaleY)));
     }
 
     presetSelector.setBounds (scaled (presetNameArea));

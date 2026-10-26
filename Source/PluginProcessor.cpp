@@ -257,7 +257,17 @@ double DAroomAudioProcessor::getTailLengthSeconds() const
 
 juce::AudioProcessorEditor* DAroomAudioProcessor::createEditor()
 {
-    return new DAroomAudioProcessorEditor (*this);
+    try
+    {
+        return new DAroomAudioProcessorEditor (*this);
+    }
+    catch (...)
+    {
+        // Never leave the host without a view: fall back to JUCE's own
+        // parameter editor instead of letting the host substitute its
+        // generic panel.
+        return new juce::GenericAudioProcessorEditor (*this);
+    }
 }
 
 void DAroomAudioProcessor::getStateInformation (juce::MemoryBlock& destData)

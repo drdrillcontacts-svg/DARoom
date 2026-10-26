@@ -34,6 +34,12 @@ Push the project to GitHub. The workflow builds on macOS and Windows and uploads
 
 ## Changelog
 
+### 1.2.1 - host-compatibility release
+- Removed the custom bounds-constrainer (a suspect for hosts refusing the custom view); resizing now scales per-axis and stays fully functional.
+- `createEditor()` is exception-guarded: if the artwork editor ever fails to construct, a functional parameter editor is shown instead of the host's generic panel.
+- Editor diagnostics appended to `Documents/DARoom-editor.log` (host name, OS, background/preset status) to pinpoint any host that still substitutes its own view.
+
+
 ### 1.2.0 - UI/UX release
 - **Clickable mode strip**: ROOM/HALL/PLATE/CHAMBER/AMBIENCE now switch on direct click (no popup menu, no dropdown arrow); the active mode is highlighted live.
 - **Live knobs**: the four rotaries are redrawn over the artwork and actually rotate with their parameter values (arc + pointer), fixing the frozen-knob artwork.

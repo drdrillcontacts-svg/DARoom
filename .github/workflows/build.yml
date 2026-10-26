@@ -63,8 +63,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd build/DAroom_artefacts/Release
-          gh release create "v1.2.0-build${GITHUB_RUN_NUMBER}" DAroom-macOS-VST3-AU.zip \
-            --title "DAroom 1.2.0 (build ${GITHUB_RUN_NUMBER})" \
+          gh release create "v1.2.1-build${GITHUB_RUN_NUMBER}" DAroom-macOS-VST3-AU.zip \
+            --title "DAroom 1.2.1 (build ${GITHUB_RUN_NUMBER})" \
             --notes "Universal (Intel + Apple Silicon) VST3, AU and Standalone builds, ad-hoc signed. auval result in the run log." \
             --target "$GITHUB_SHA"
       - name: Upload macOS plugins
@@ -108,7 +108,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v1.2.0-build${GITHUB_RUN_NUMBER}"
+          TAG="v1.2.1-build${GITHUB_RUN_NUMBER}"
           for i in $(seq 1 80); do
             gh release view "$TAG" --repo drdrillcontacts-svg/DARoom > /dev/null 2>&1 && break
             sleep 15
